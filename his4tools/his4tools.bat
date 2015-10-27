@@ -1,7 +1,7 @@
 @echo off
 D:
-md  d:\his4tools
-cd  D:\his4tools
+md  c:\his4tools
+cd  c:\his4tools
 taskkill /IM his4tools.exe /F 
 if exist canshu.ini goto canshu else
 copy \\192.189.101.98\backup\his4tools\*.*  /y
