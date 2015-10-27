@@ -20,7 +20,7 @@ start his4tools.exe
 exit
 
 :canshu
-rename canshu.ini canshu.ini.bak
+copy canshu.ini canshu.ini.bak /y
 copy \\192.189.101.98\backup\his4tools\*.*  /y
 copy canshu.ini.bak canshu.ini /y
 copy ms*.* %windir%\system32\ /y
