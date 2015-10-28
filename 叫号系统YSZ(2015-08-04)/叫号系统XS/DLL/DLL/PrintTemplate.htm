@@ -1,0 +1,562 @@
+<HTML XMLNS:IE>
+<HEAD>
+<META http-equiv=content-type content="text/html; charset=gb2312">
+<META HTTP-EQUIV="MSThemeCompatible" CONTENT="yes">
+<?IMPORT NAMESPACE="IE" IMPLEMENTATION="#default">
+<STYLE TYPE="text/css">
+		.layoutstyle
+		{
+		    width:7.75in;
+		    height:10.75in;
+		    margin-top:2.2in;
+                    margin-left:0.65in;
+                    margin-right:0.65in;
+                    margin-bottom:0.3in;
+		    background:white;   
+		    border:0;
+
+ 		}
+		.pagestyle
+		{ 
+			background:white;
+		    border-left:1 solid black;
+		    border-top:1 solid black;
+		    border-right:0 solid black;
+		    border-bottom:0 solid black;
+                    font-size:10.5pt;
+		    width:7.75in;
+		    height:10.75in;
+		    overflow:hidden;
+		    left:-100in;
+			margin:11px;
+			
+		}
+		.headerstyle
+		{
+			 position:absolute;
+		    top:0.30in;
+		    width:6.5in;
+		    left:1.3in;
+		}
+		.footerstyle
+		{
+			 position:absolute;
+		    top:10.96in;
+		    width:6.5in;
+		    left:1.3in;
+		}
+		#ui
+		{
+		    height:40px;
+		    background-color:#C0C0C0;
+		    margin:0px;
+		    padding;0px; 
+		}
+		#pagecontainer
+		{
+		   width:100%;
+		   overflow:auto; 
+		   border:medium none thin threedhighlight inset; 
+		   background:threedshadow
+		
+		}
+		#zoomcontainer
+		{
+		    zoom:100%;
+		    width:100%;
+		    position:relative;
+		}
+</STYLE>
+
+
+<SCRIPT LANGUAGE="JScript">
+	var iNextPageToCreate = 1;
+	var oPageStyleClass;
+	var oLorStyleClass;
+	var oHeaderStyleClass;
+	var oFooterStyleClass;
+	var Flag = 0;
+	var bFlag = 0;          
+	var MaxPage = 0;       //起始打印页码
+	var patientid = 0;    //病人序号
+	var MaxControl = 0;   //最大控件id
+	var NotHeadFoot = 0;  //不需要页眉和页脚
+	var isPageNum = 0;    //是否显示页码 1:显示 0:不显示 2:取MAXPAGE
+
+
+    //功能: 初始化函数
+	function Init()
+	{
+	 
+	    oPageStyleClass = FindStyleRule(".pagestyle");
+	    oLorStyleClass = FindStyleRule(".layoutstyle");
+	    oHeaderStyleClass = FindStyleRule(".headerstyle");
+	    oFooterStyleClass = FindStyleRule(".footerstyle");
+
+		InitClasses();
+	    AddFirstPage();
+
+	    if(MaxPage > 0)
+	    {
+	    	pagebegin.value = MaxPage;
+	    	currpage.value = MaxPage;
+	    }
+
+	    ui.style.width = document.body.clientWidth;
+	    ui.style.height = "40px";
+	    zoomcontainer.style.zoom = "100%";
+	    pagecontainer.style.height = document.body.clientHeight - ui.style.pixelHeight;
+	    
+	    if(NotHeadFoot ==1)
+	    {  
+	        oLorStyleClass.style.margin = "0.3in";
+	   }
+	}
+	
+	// Returns the object corresponding to a named style rule
+	function FindStyleRule(styleName)
+	{
+	    for (i = 0; i < document.styleSheets.length; i++)
+	    {
+	        for (j = 0; j < document.styleSheets(i).rules.length; j++)
+	        {
+	            if (document.styleSheets(i).rules(j).selectorText == styleName)
+	           
+	                return document.styleSheets(i).rules(j);
+	        }      
+	    }
+	}
+	
+  function InitClasses()
+{
+    //oPageStyleClass.style.width = printer.pageWidth/100 + "in";
+    oPageStyleClass.style.width = "7.75in";
+    //oPageStyleClass.style.height = printer.pageHeight/100 + "in";  
+    oPageStyleClass.style.height = "10.75in";
+    //oLorStyleClass.style.marginLeft = printer.marginLeft/100 + "in";
+    oLorStyleClass.style.marginLeft = "0.75in";
+    //oLorStyleClass.style.width = (printer.pageWidth - (printer.marginLeft + printer.marginRight))/100 + "in";
+    oLorStyleClass.style.width = "6.5in";
+    //oLorStyleClass.style.height = ((printer.pageHeight - (printer.marginTop + printer.marginBottom))/100 - 1.5)+ "in";
+    oLorStyleClass.style.height = "7.785in";
+    oHeaderStyleClass.style.left = oLorStyleClass.style.marginLeft;
+    oHeaderStyleClass.style.width = oLorStyleClass.style.width;   
+    oFooterStyleClass.style.left = oLorStyleClass.style.marginLeft;
+    oFooterStyleClass.style.width = oLorStyleClass.style.width;
+    //oFooterStyleClass.style.top   = (printer.pageHeight - (printer.marginTop + printer.marginBottom))/100 + "in";
+    oFooterStyleClass.style.top = "9.9in";
+}
+	
+	
+	function AddFirstPage()
+	{
+	    document.cookie = -1;
+	    newHTML  = "<IE:DEVICERECT ID='page1' MEDIA='print' CLASS='pagestyle'>";
+	    newHTML += "<IE:LAYOUTRECT ID='layoutrect1' CONTENTSRC='document' ONLAYOUTCOMPLETE='OnRectComplete(this)' NEXTRECT='layoutrect2' CLASS='layoutstyle'/>";
+	    newHTML += "</IE:DEVICERECT>";
+	
+	    zoomcontainer.insertAdjacentHTML("afterBegin", newHTML);
+	 
+	    headfoot.page = 1;
+	    AddHeaderAndFooterToPage(1);
+	    iNextPageToCreate = 2;
+	}
+	
+	function OnRectComplete(element)
+	{
+ 	    element.onlayoutcomplete = null;
+   	    if (event.contentOverflow == true)
+		{
+  	        AddNewPage();
+		}
+	    else
+	    {
+	        headfoot.pageTotal = document.all.tags("DEVICERECT").length;
+	        
+	        for (i = 1; i <= headfoot.pageTotal; i++)
+	        {
+	            //如果打印过的最大页码比现在的PageNum大，则将显示隐藏。否则，显示出来
+	            if(MaxPage > i)
+	            {
+	               document.all("page" + i).style.display = "none";
+	            }
+	            else
+	            {
+	               document.all("page" + i).style.display = "block";
+	            }
+	        }  
+	                
+	        //只打印一次
+	        if(Flag == 0)
+	        {
+	           setTimeout("CheckPrint();", 100);
+	           Flag ++;
+	        }
+	    }
+	    if (isPageNum == 2)
+		{
+		    SaveMaxPage(headfoot.pageTotal);
+		    Close();
+		}
+		
+	}
+
+	function AddNewPage()
+	{
+	   // document.all("layoutrect" + (iNextPageToCreate - 1)).onlayoutcomplete = null;
+	    headfoot.page = iNextPageToCreate;
+	    
+	    newHTML  = "<IE:DEVICERECT ID='page" + iNextPageToCreate +  "' MEDIA='print' CLASS='pagestyle'>";
+	    newHTML += "<IE:LAYOUTRECT ID='layoutrect" + iNextPageToCreate + "' ONLAYOUTCOMPLETE='OnRectComplete(this)' NEXTRECT='layoutrect" + (iNextPageToCreate + 1) + "'  CLASS='layoutstyle'/>";
+	    newHTML += "</IE:DEVICERECT>";
+	
+	    zoomcontainer.insertAdjacentHTML("beforeEnd", newHTML);
+	    AddHeaderAndFooterToPage(iNextPageToCreate);
+	    iNextPageToCreate++;
+	}
+	
+	function AddHeaderAndFooterToPage(pageNum)
+	{
+	   newHeader = "<DIV CLASS='headerstyle' id= 'headers" + pageNum + "'>" +  "</br></br></br></br><p align=center style='font-size:16.0pt;font-family:楷体_GB2312'><img style='WIDTH:30px;HEIGHT:30px;' src='..\\..\\pic\\logo1.jpg'/><img style='WIDTH:150px;HEIGHT:30px;' src='..\\..\\pic\\logo3-1.jpg'/>"+
+	               "</p><p align=center style='font-size:18.0pt;font-family:黑体;line-height:0;'>TEMPLATEINFO</p></br><p align=center style='font-size:11pt;font-family:宋体;'>PATIENTINFO<HR ID='hrheader" + pageNum + "'></p></DIV>";
+	   //newFooter = "<DIV CLASS='footerstyle' id='footers" + pageNum +"'>" + "<HR ID='hrfooter" + pageNum +"'><p align=center style='font-size:12pt;font-family:宋体;'>第" +pageNum + "页</p></DIV>";
+
+      var varPageNum = "  ";
+	  if(isPageNum == 1)
+	  {
+	     varPageNum = pageNum;
+	  }
+	   newFooter = "<DIV CLASS='footerstyle' id='footers" + pageNum +"'>" + "<p ID='hrfooter" + pageNum +"'><p id='pagefooters" + pageNum + "' align=center style='font-size:12pt;font-family:宋体;'>第  "+varPageNum+"  页</p></DIV>";
+	   
+ 	   //需要页眉和页脚
+	   if(NotHeadFoot == 0)
+	   {
+		   //如果打印过的最大页码比现在的PageNum小，则加上打印头、尾
+		   if(MaxPage < pageNum)
+		   {
+			  document.all("page" + pageNum).insertAdjacentHTML("afterBegin", newHeader); 
+			  document.all("page" + pageNum).insertAdjacentHTML("beforeEnd", newFooter);
+		   }
+	   }
+	}
+	
+	function CheckPrint()
+	{
+		switch (dialogArguments.__IE_PrintType)
+		{
+			case "Prompt":
+				if (printer.showPrintDialog()) 
+					PrintPrep();
+				break;
+			case "NoPrompt":
+				PrintPrep();
+				break;
+			case "Preview":
+			default:
+				break;
+		}
+	}
+	
+	function AddPageTotalToPages()
+	{
+	
+	}
+	
+	function PrintPrep()
+	{
+		if (layoutrect1.contentDocument.readyState == "complete")
+		{
+			PrintNow();
+		}
+		else
+		{
+			layoutrect1.contentDocument.onreadystatechange = PrintWhenContentDocComplete;
+		}
+	}
+	
+	function PrintWhenContentDocComplete()
+	{
+		if (layoutrect1.contentDocument.readyState == "complete")
+		{
+			layoutrect1.contentDocument.onreadystatechange = null;
+			PrintNow();
+		}
+	}
+	function PrintClick()
+	{
+	        if (printer.showPrintDialog()) 
+		PrintPrep();
+	}
+	
+	//功能: 开始打印
+	function PrintNow()
+	{
+	    var startPage;
+	    var endPage;
+	    var oDeviceRectCollection = document.all.tags("DEVICERECT");
+	    
+	    if (printer.currentPage == true)
+	    {
+                  if(MaxPage==0)
+                  {
+                     startPage = currpage.value - pagebegin.value + 1;
+                     endPage = currpage.value - pagebegin.value + 1;
+                  }
+
+	    }
+	    else if (dialogArguments.__IE_PrintType == "NoPrompt" || 
+	        printer.selectedPages == false)
+	    {
+	        if(MaxPage == 0)
+	        {
+	       // 如果已打印的最大页码是0表明不需要套打（或者套打的开始）
+	           startPage = 1;
+	        }
+	        else
+	        {
+	        // 从以前打印过的最大页码开始打印 
+	           startPage = MaxPage; 
+	        }
+	        endPage = oDeviceRectCollection.length;
+	    }
+
+	    else
+	    {
+	        if(MaxPage == 0)
+	        {
+	        //如果已打印的最大页码是0表明不需要套打（或者套打的开始）
+	           startPage = printer.pageFrom - pagebegin.value + 1;
+	        }
+	        else
+	        {
+	        //从以前打印过的最大页码开始打印
+	          startPage = MaxPage; 
+	        }
+	        endPage = printer.pageTo - pagebegin.value + 1;
+	        if (startPage > endPage)
+	        {
+	            alert("Error: Start page greater than end page");
+	            return;
+	        }
+	        if (startPage > oDeviceRectCollection.length)
+	        {
+	            alert("Error: Start page greater than number of pages in print job.");
+	            return;
+	        }
+	        if (endPage > oDeviceRectCollection.length)
+	        {
+	            alert("Warning: End page greater than number of pages in print job. Continuing Print Job.");
+	            endPage = oDeviceRectCollection.length;
+	        }
+	    }
+	    
+		printer.startDoc("Printing from Tmplt6.htm");
+	
+	    for (i = startPage - 1; i < endPage; i++)
+	    {
+		    printer.printPage(oDeviceRectCollection[i]);
+		}
+		    
+		printer.stopDoc();
+
+		if(MaxControl!=0) 
+		{
+		    
+				SaveMaxPage(endPage);
+		    
+		}
+	        
+	}
+	
+	function Close()
+	{
+	    close();
+	}
+	
+	function ResizeApp()
+	{
+	    ui.style.width = document.body.clientWidth;
+	    pagecontainer.style.height = document.body.clientHeight - ui.style.pixelHeight;
+	}
+	
+	//功能: 放大与缩写
+	function Zoomer(string)
+	{
+	    if (string == "in")
+	    {
+	        currZoom = zoomcontainer.style.zoom;
+	        currZoom = currZoom.substring(0, currZoom.length - 1);
+	        currZoom = parseInt(currZoom, 10);
+	        newZoom = currZoom + 1;
+	        
+	        if (newZoom > 10000) return;
+	        
+	        zoomcontainer.style.zoom = newZoom + "%";
+	        zoomnumber.value = newZoom;
+	    }
+	    else if (string == "out")
+	    {
+	        currZoom = zoomcontainer.style.zoom;
+	        currZoom = currZoom.substring(0, currZoom.length - 1);
+	        currZoom = parseInt(currZoom, 10);
+	        newZoom = currZoom - 1;
+	        
+	        if (newZoom < 1) return;
+	               
+	        zoomcontainer.style.zoom = newZoom + "%";
+	        zoomnumber.value = newZoom;
+	    }
+	    else
+	    {
+	        if (event.srcElement.id != "zoomnumber") return;
+	        if (event.keyCode != 13) return;
+	
+	        var newZoom = zoomnumber.value;
+	        numValue = parseInt(newZoom, 10);
+	        
+	        if (numValue != newZoom) return;
+	        if (newZoom > 10000) return;
+	        if (newZoom < 1) return;
+	            
+	        zoomcontainer.style.zoom = newZoom + "%";
+	    }
+	}
+	
+	/*
+	  功能: 设置边框
+	*/
+	function AddBorderToLor()
+	{
+	     var lborder = "1 solid gray";
+	     var dis = "none";
+	     if(bFlag == 0)
+	     {
+	        bFlag = 1;
+	     }
+	     else
+	     {
+	        bFlag = 0;
+	        lborder = "";
+	        dis = "";
+	      }
+	   
+	     for (i = 1; i <= headfoot.pageTotal; i++)
+	     {       
+	         document.all("layoutrect" + i).style.border = lborder; 
+	         document.all("hrheader" + i).style.display = dis;
+	         document.all("hrfooter" + i).style.display = dis;      
+	      } 
+	
+	}
+	
+	//功能: 页面设置
+	function DoPageSetup()
+	{
+	    printer.showPageSetupDialog();
+	    InitClasses();
+	}
+	
+	//保存当前最大的页码
+	function SaveMaxPage(totalpage)
+	{
+			/*var conn = new ActiveXObject("ADODB.Connection");
+			conn.Open("dsn=emroracle;uid=emr;pwd=emr");
+			
+			var rs = new ActiveXObject("ADODB.Recordset");
+			var sql = "select count(bingrenxh) as total from emr_bingchengdy where bingrenxh="+patientid ;
+			
+			rs.Open(sql, conn);
+					
+			var sqlUpdate = "";
+			if (!rs.EOF)
+			{
+			   totalnumber = (rs("total")+"").replace(/^\s+|\s+$/, "");	
+			   if(totalnumber>=1)
+			   {
+			      sqlUpdate = "update emr_bingchengdy set controlid='"+MaxControl +"', pagenumber= "+totalpage+ " where bingrenxh= "+patientid ;
+			   } 
+			   else
+			   {
+			      sqlUpdate = "insert into emr_bingchengdy(bingrenxh, controlid, pagenumber) values("+patientid+",'"+MaxControl+"',"+totalpage+")";
+			   }
+			}
+			rs.close(); 
+			rs = null; 
+			
+			if(sqlUpdate !="")
+			{
+				conn.BeginTrans();
+				conn.Execute(sqlUpdate ,false);
+				conn.CommitTrans();
+			}
+			conn.close(); 
+			conn = null;*/
+			var  fso  =  new  ActiveXObject("Scripting.FileSystemObject");  
+            var  a  =  fso.CreateTextFile("maxpage.txt",  true);  
+            a.WriteLine(MaxControl+"|"+totalpage);  
+            a.Close();
+	}
+	
+function doSrl()
+{
+    var scrolly,scrolly1;
+    var str;
+    scrolly = (pagecontainer.scrollTop + 100 )/ screen.deviceYDPI;
+    str = oPageStyleClass.style.height;
+    str = str.substr(0,str.length - 3);
+    scrolly1 = scrolly / str ;
+    currpage.value = Math.floor(pagebegin.value) + Math.floor(scrolly1) ;
+}
+
+function setPage()
+{
+    var scrolly,scrolly1;
+    var str;
+    var val;
+    var 
+    scrolly = (pagecontainer.scrollTop + 100 )/ screen.deviceYDPI;
+    str = oPageStyleClass.style.height;
+    str = str.substr(0,str.length - 3);
+    scrolly1 = scrolly / str ;
+    currpage.value = Math.floor(pagebegin.value) + Math.floor(scrolly1) ;
+   for (i = 1; i <= headfoot.pageTotal; i++)
+   {
+   		if (MaxPage == 0)
+	        val =  Math.floor(pagebegin.value) + i - 1;
+	    else
+	    	val = Math.floor(pagebegin.value) + i - MaxPage;
+        if (document.all("pagefooters" + i) != null)
+       		document.all("pagefooters" + i).innerText = "第 "+val+" 页";
+   } 
+}
+</SCRIPT>
+
+
+<HEAD>
+
+<BODY ONLOAD="Init()" ONRESIZE="ResizeApp()" SCROLL="no">
+<P id="ui" > <span style="font-size:10.5pt">&nbsp;&nbsp;&nbsp;&nbsp;起始第<INPUT ID="pagebegin" TYPE="TEXT" VALUE="1" SIZE="3" MAXLENGTH="4" onBlur="setPage()">页</span>
+<span style="font-size:10.5pt">当前第</span><INPUT ID="currpage" TYPE="TEXT" VALUE="1" SIZE="3" MAXLENGTH="4" readOnly><span style="font-size:10.5pt">页&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span>
+        <INPUT TYPE="BUTTON" VALUE="页面设置" onMouseUp="DoPageSetup()" ID="Button3" NAME="Button3">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <INPUT  type="BUTTON" value="边&nbsp;框" onMouseUp="AddBorderToLor()">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <INPUT TYPE="BUTTON" VALUE="放&nbsp;大" onMouseUp="Zoomer('in')" ID="Button1" NAME="Button1">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+       <INPUT ID="zoomnumber" TYPE="TEXT" VALUE="100" SIZE="3" MAXLENGTH="4" onKeyUp="Zoomer('amount')" NAME="zoomnumber">%
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <INPUT TYPE="BUTTON" VALUE="缩&nbsp;小" onMouseUp="Zoomer('out')" ID="Button2" NAME="Button2">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <INPUT  type="BUTTON" value="打&nbsp;印" onMouseUp="PrintClick()">
+        &nbsp;&nbsp;&nbsp;&nbsp;
+        <INPUT  type="BUTTON" value="退&nbsp;出" onMouseUp="Close()">
+</P>
+<IE:TEMPLATEPRINTER ID="printer"/>
+<IE:HEADERFOOTER ID="headfoot"/>
+
+<DIV ID="pagecontainer" onScroll=doSrl()>
+    <DIV ID="zoomcontainer">
+    </DIV>
+</DIV>
+</BODY>
+</HTML>
