@@ -111,7 +111,7 @@ Begin VB.Form mainframe
    End
    Begin VB.Label Label1 
       Alignment       =   2  'Center
-      Caption         =   "°æ±¾ºÅ:20150213¦Á"
+      Caption         =   "°æ±¾ºÅ:20151027¦Á"
       Height          =   375
       Left            =   1200
       TabIndex        =   2
